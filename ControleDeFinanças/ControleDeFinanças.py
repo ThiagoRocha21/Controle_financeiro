@@ -1,5 +1,6 @@
 import sqlite3
-import os
+from os import system, name
+
 
 con = sqlite3.connect('produtos.db')
 cur = con.cursor()
@@ -16,40 +17,96 @@ cur.execute('''
     CREATE TABLE IF NOT EXISTS financeiro (
         produto_id INTEGER, 
         preço_unitario FLOAT, 
+        preço_total FLOAT,
         FOREIGN KEY (produto_id) REFERENCES produtos(id)
     )
 ''')
 con.commit()
-input('teste...')
+
+
 
 def limpar_tela():
-    os.system('cls' if os.name == 'nt' else 'clear')
+    system('cls' if name == 'nt' else 'clear')
+
+
+
+def definir_preco_total():
+    cur.execute("SELECT quantidade FROM ")
+
+
+
 
 def adicionar_produtos_db():
     produto_add = str(input("Digite o nome do produto: ")).lower()
     quantidade_produtos = int(input("Digite a quantidade de produtos: "))
     preco = float(input("Digite o preço unitário do produto: "))
+    preco_total = quantidade_produtos * preco
+
 
     cur.execute('SELECT * FROM produtos WHERE nome = ?', (produto_add,))
     resultado = cur.fetchone()
+    
 
     if not resultado:
         cur.execute("INSERT INTO produtos (nome, quantidade) VALUES (?, ?)", (produto_add, quantidade_produtos))
         produto_last_id = cur.lastrowid
-        cur.execute("INSERT INTO financeiro (produto_id, preço_unitario) VALUES (?, ?)", (produto_last_id, preco))
+        cur.execute("INSERT INTO financeiro (produto_id, preço_unitario, preço_total) VALUES (?, ?, ?)", (produto_last_id, preco, preco_total))
         con.commit()
         input("✅ Produto novo adicionado com sucesso. \nAperte Enter para continuar...")
+    
     else:
         produto_id = resultado[0]
         quantidade_atual = resultado[2]
         nova_quantidade = quantidade_atual + quantidade_produtos
+        
+        cur.execute("SELECT preço_total FROM financeiro WHERE produto_id = ?", (produto_id,))
+        resultado2 = cur.fetchone()
+        _=resultado2
         cur.execute("UPDATE produtos SET quantidade = ? WHERE id = ?", (nova_quantidade, produto_id))
+        preco_atualizado = resultado2[0] + preco_total
+        cur.execute("UPDATE financeiro SET preço_total = ? WHERE produto_id = ?", (preco_atualizado, produto_id,))
         con.commit()
         input("✅ Quantidade atualizada com sucesso. \nAperte Enter para continuar...")
 
-def remover_produtos_db(produto_rmv):
-    cur.execute("DELETE FROM produtos WHERE nome = ?", (produto_rmv,))
-    con.commit()
+
+
+def remover_produtos_db():    
+    produto_rmv = str(input("Digite o nome do produto: ")).lower().strip()
+    cur.execute("SELECT * FROM produtos WHERE nome = ?", (produto_rmv,))
+    resultado = cur.fetchone()
+    if not resultado:
+        input("Produto não encontrado, tente novamente.")
+    else:
+        id_produto = resultado[0]
+        cur.execute("DELETE FROM produtos WHERE nome = ?", (produto_rmv,))
+        cur.execute("DELETE FROM financeiro WHERE produto_id = ?", (id_produto,))
+        con.commit()
+        input("✅ Produto removido com sucesso. \nAperte Enter para continuar...")
+
+
+def remover_quantidade():
+    produto_rmv = str(input("Digite o nome do produto: ")).lower().strip()
+    quantidade_rmv = int(input("Digite a quantidade: "))
+    cur.execute("SELECT * FROM produtos WHERE nome = ?", (produto_rmv,))
+    resultado = cur.fetchone()
+    if not resultado:
+        input("Produto não encontrado, tente novamente.")
+    else:
+        produto_id = resultado[0]
+        quantidade_produto = resultado[2]
+        nova_quantidade_produto = quantidade_produto - quantidade_rmv
+
+        if nova_quantidade_produto < 0:
+            input("A quantidade digitada é maior do que a disponível em estoque. Tente novamente.")
+        else:
+            cur.execute("UPDATE produtos SET quantidade = ? WHERE id = ?", (nova_quantidade_produto, produto_id))
+            print(f"A quantidade de {produto_rmv} foi alterada com sucesso! ✅")
+            input("Aperte enter para continuar...")
+
+        if nova_quantidade_produto == 0:
+            cur.execute("DELETE FROM produtos WHERE nome = ?", (produto_rmv,))
+
+
 
 def listar_produtos_db(produto_db):
     cur.execute("SELECT * FROM produtos WHERE nome = ?", (produto_db,))
@@ -86,13 +143,14 @@ while True:
             print(f'{20 * "-="}')
             print(f"{10 * ' '}Escolha uma opção")
             print(f'{20 * "-="}')
-            opcao_escolha2 = int(input(' 1 - Remover um produto \n 2 - Sair para o menu\n→ '))
-            if opcao_escolha2 == 1:
+            escolha_rmv = int(input(' 1 - Remover um produto \n 2 - Alterar a quantidade de um produto\n 3 - Sair '))
+            if escolha_rmv == 1:
                 limpar_tela()
-                produto_remover = str(input("Digite o nome do produto: ")).lower().strip()
-                remover_produtos_db(produto_remover)
-                input("✅ Produto removido com sucesso. \nAperte Enter para continuar...")
-            elif opcao_escolha2 == 2:
+                remover_produtos_db()
+            elif escolha_rmv == 2:
+                remover_quantidade()
+                limpar_tela()
+            elif escolha_rmv == 3:
                 limpar_tela()
                 break
 
