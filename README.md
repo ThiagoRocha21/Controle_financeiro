@@ -4,7 +4,7 @@ Criei esse código para organizar minhas finanças como vendedor e estou compart
 ## 🛠️ Construído com
 
 * [Python](https://www.python.org) - Linguagem utilizada
-* [Pycharm](https://www.jetbrains.com/pycharm/) - IDE utilizada
+* [VS Code](https://code.visualstudio.com) - IDE utilizada
 * [Sqlite3](https://docs.python.org/3/library/sqlite3.html) - Biblioteca utilizada <br><br>
 
 ## ⁉ Dúvidas
