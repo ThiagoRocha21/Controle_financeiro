@@ -6,16 +6,16 @@
 import sqlite3
 from os import system, name
 
-con = sqlite3.connect('produtos.db')
+con = sqlite3.connect('produtos.db') #Se conecta com o BD e inicia o cursor
 cur = con.cursor()
 
 cur.execute('''
-    CREATE TABLE IF NOT EXISTS produtos (
+    CREATE TABLE IF NOT EXISTS produtos (   
         id INTEGER PRIMARY KEY, 
         nome VARCHAR(20), 
         quantidade INTEGER
     )
-''')
+''') #cria a tabela produtos com as colunas id, nome, quantidade
 
 cur.execute('''
     CREATE TABLE IF NOT EXISTS financeiro (
@@ -24,7 +24,7 @@ cur.execute('''
         preço_total FLOAT,
         FOREIGN KEY (produto_id) REFERENCES produtos(id)
     )
-''')
+''') #cria a tabela financeiro com as colunas produto_id (que está ligada ao id do produto), preço_unitario e preço_total
 
 cur.execute('''
     CREATE TABLE IF NOT EXISTS produto_final(
@@ -33,13 +33,13 @@ cur.execute('''
         quantidade INTEGER,
         preço FLOAT                
     )         
-''')
+''') #cria a tabela produto_final com as colunas produto_final_id, nome_produto_final, quantidade e preço
+con.commit() #salva as alterações no bd
 
 
 
-con.commit()
 
-def funcao_select(tabela, coluna=None, valor=None, cond_extra=None, valor_extra=None):
+def funcao_select(tabela, coluna=None, valor=None, cond_extra=None, valor_extra=None): #cria uma função de select que pode usar o WHERE caso seja solicitado
     query = f"SELECT * FROM {tabela}" 
 
     parametros = []
@@ -59,14 +59,14 @@ def funcao_select(tabela, coluna=None, valor=None, cond_extra=None, valor_extra=
 
 
 
-def escolha_uma_opcao():
+def escolha_uma_opcao(): #cria um visual pro menu ficar mais estético
     print(f'{20 * "-="}')
     print(f"{10 * ' '}Escolha uma opção")
     print(f'{20 * "-="}')
 
 
 
-def limpar_tela():
+def limpar_tela(): #é responsável por limpar a tela dps de uma interação com o menu
     system('cls' if name == 'nt' else 'clear')
     
 
@@ -75,7 +75,7 @@ def limpar_tela():
 
 
 
-def calcular_produto_final():
+def calcular_produto_final(): #calcula o o preço do produto final com base na quantidade de produtos brutos usados, o preço unitário de cada um e divide pela quantidade de produtos gerados
     produto_utilizado = str(input("Digite o produto usado: "))
     cur.execute("SELECT * FROM produtos WHERE nome = ?", (produto_utilizado,)) #zebra
     resultado_produto_utilizado = cur.fetchone()
@@ -108,18 +108,19 @@ def calcular_produto_final():
     con.commit()
 
 
-def adicionar_produtos_db():
+def adicionar_produtos_db(): #função responsável por adicionar o produto e o preço unitário no banco de dados e se o produto já existir, ele adiciona apenas a quantidade
     produto_add = str(input("Digite o nome do produto: ")).lower()
     quantidade_produtos_add = int(input("Digite a quantidade de produtos: "))
-    preco = float(input("Digite o preço unitário do produto: "))
-    preco_total = quantidade_produtos_add * preco
-
+    
 
     cur.execute('SELECT * FROM produtos WHERE nome = ?', (produto_add,))#zebra
     resultado = cur.fetchone()
     
 
     if not resultado:
+        preco = float(input("Digite o preço unitário do produto: "))
+        preco_total = quantidade_produtos_add * preco
+
         cur.execute("INSERT INTO produtos (nome, quantidade) VALUES (?, ?)", (produto_add, quantidade_produtos_add))
         produto_last_id = cur.lastrowid
         cur.execute("INSERT INTO financeiro (produto_id, preço_unitario, preço_total) VALUES (?, ?, ?)", (produto_last_id, preco, preco_total))
@@ -131,18 +132,23 @@ def adicionar_produtos_db():
         quantidade_atual = resultado[2]
         nova_quantidade = quantidade_atual + quantidade_produtos_add
         
-        cur.execute("SELECT preço_total FROM financeiro WHERE produto_id = ?", (produto_id,))#zebra
+        cur.execute("SELECT preço_total FROM financeiro WHERE produto_id = ?", (produto_id,))
         resultado2 = cur.fetchone()
         _=resultado2
+
+        cur.execute("SELECT preço_unitario FROM financeiro WHERE produto_id = ?", (produto_id,))
+        resultado_preco = cur.fetchone()
+        print(resultado_preco)
+
         cur.execute("UPDATE produtos SET quantidade = ? WHERE id = ?", (nova_quantidade, produto_id))
-        preco_atualizado = resultado2[0] + preco_total
+        preco_atualizado = resultado2[0] + (quantidade_produtos_add * resultado_preco[0])
         cur.execute("UPDATE financeiro SET preço_total = ? WHERE produto_id = ?", (preco_atualizado, produto_id,))
         con.commit()
         input("✅ Quantidade atualizada com sucesso. \nAperte Enter para continuar...")
 
 
 
-def remover_produtos_db():    
+def remover_produtos_db():   #função responsável por deletar o produto 
     produto_rmv = str(input("Digite o nome do produto: ")).lower().strip()
     cur.execute("SELECT * FROM produtos WHERE nome = ?", (produto_rmv,))#zebra
     resultado = cur.fetchone()
@@ -156,7 +162,7 @@ def remover_produtos_db():
         input("✅ Produto removido com sucesso. \nAperte Enter para continuar...")
 
 
-def remover_quantidade():
+def remover_quantidade(): #função responsável por cuidar da parte de "uso" dos produtos, caso tenha sido usado uma quantidade, ele deleta apenas a quantidade, se tudo tiver sido usado, deleta a quantidade e o produto do bd
     produto_rmv = str(input("Digite o nome do produto: ")).lower().strip()
     quantidade_rmv = int(input("Digite a quantidade: "))
     cur.execute("SELECT * FROM produtos WHERE nome = ?", (produto_rmv,))
@@ -182,7 +188,7 @@ def remover_quantidade():
 
 
 
-def listar_produtos_db(produto_db):
+def listar_produtos_db(produto_db): #lista um produto com base em pesquisa ou lista todos os produtos do banco
     cur.execute("SELECT * FROM produtos WHERE nome = ?", (produto_db,))#zebra
     resultado = cur.fetchall()
     if resultado:
@@ -190,20 +196,23 @@ def listar_produtos_db(produto_db):
             print(f"Nome: {produto[1]}, Quantidade: {produto[2]}")
     else:
         print("❌ Produto não encontrado.")
+
+
+
 while True:
     escolha_uma_opcao()
-    escolhaMenu = int(input(' 1 - Gerenciar produto final \n 2 - Gerenciar produtos brutos \n 3 - Relatórios \n 4 - Controle de finanças \n 5 - sair '))
-    if escolhaMenu == 1:
+    escolhaMenu = int(input(' 1 - Gerenciar produto final \n 2 - Gerenciar produtos brutos \n 3 - Relatórios \n 4 - Controle de finanças \n 5 - sair ')) #menu inicial
+    if escolhaMenu == 1: # parte responsável pelo gerenciamento do produto final
         limpar_tela()
         escolha_uma_opcao()
         calcular_produto_final()
-    elif escolhaMenu == 2:
+    elif escolhaMenu == 2: # parte responsável pelo gerenciamento dos produtos brutos
         limpar_tela()
         while True:
             escolha_uma_opcao()
             escolhaMenu2 = int(input(' 1 - Adicionar produto \n 2 - Remover produtos \n 3 - Ver produtos\n 4 - Sair do programa\n→ '))
 
-            if escolhaMenu2 == 1:
+            if escolhaMenu2 == 1: # opção responsável por adicionar produtos brutos ao bd
                 while True:
                     limpar_tela()
                     escolha_uma_opcao()
@@ -215,7 +224,7 @@ while True:
                         limpar_tela()
                         break
 
-            elif escolhaMenu2 == 2:
+            elif escolhaMenu2 == 2: # opção responsável por remover produtos ou quantidades
                 while True:
                     limpar_tela()
                     escolha_uma_opcao()
@@ -230,7 +239,7 @@ while True:
                         limpar_tela()
                         break
 
-            elif escolhaMenu2 == 3:
+            elif escolhaMenu2 == 3: # opção responsável por listar os produtos existentes
                 while True:
                     limpar_tela()
                     escolha_uma_opcao()
@@ -255,13 +264,13 @@ while True:
                         exemplo = str(input('Digite o nome que deseja procurar: '))
                         funcao_select(exemplo1, exemplo, c=False, d=False, e=False)
 
-            elif escolhaMenu2 == 4:
+            elif escolhaMenu2 == 4: # encerra o menu de produtos brutos
                 limpar_tela()
                 break
-    if escolhaMenu == 4:
+    if escolhaMenu == 5: # encerra o programa
         limpar_tela()
         print("👋 Saindo do programa...")
         break
-con.commit()
-con.close()
+con.commit() #salva todas as alterações
+con.close() #fecha o bd
 
