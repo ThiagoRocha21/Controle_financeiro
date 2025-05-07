@@ -1,3 +1,8 @@
+#precisa mudar o esquema do menu, tornar um menu duplo, uma parte para os produtos brutos e outra parte para o produto final
+#bom deixar um espaço separado p/ o menu de estatística 
+#preciso implementar uma medida para que os preços no bd não fiquem diferentes
+    
+
 import sqlite3
 from os import system, name
 
@@ -21,7 +26,7 @@ cur.execute('''
     )
 ''')
 
-cur.excecute('''
+cur.execute('''
     CREATE TABLE IF NOT EXISTS produto_final(
         produto_final_id INTEGER PRIMARY KEY,
         nome_produto_final VARCHAR(20),
@@ -34,46 +39,73 @@ cur.excecute('''
 
 con.commit()
 
+def funcao_select(tabela, coluna=None, valor=None, cond_extra=None, valor_extra=None):
+    query = f"SELECT * FROM {tabela}" 
+
+    parametros = []
+
+    if coluna and valor is not None:
+        query += f" WHERE {coluna} = ?"
+        parametros.append(valor)
+
+        if cond_extra and valor_extra is not None:
+            query += f" AND {cond_extra} = ?"
+            parametros.append(valor_extra)
+
+    cur.execute(query, parametros)
+    resultado_funcao = cur.fetchall()
+    print(resultado_funcao)
+
+
+
+
+def escolha_uma_opcao():
+    print(f'{20 * "-="}')
+    print(f"{10 * ' '}Escolha uma opção")
+    print(f'{20 * "-="}')
+
 
 
 def limpar_tela():
     system('cls' if name == 'nt' else 'clear')
+    
+
+
+#def definir_preco_total():
 
 
 
-def definir_preco_total():
-    cur.execute("SELECT quantidade FROM ")
-
-
-
-def calcular_produto_final(): #precisa mudar o esquema do menu, tornar um menu duplo, uma parte para os produtos brutos e outra parte para o produto final
-    #bom deixar um espaço separado p/ o menu de estatística tbm
+def calcular_produto_final():
     produto_utilizado = str(input("Digite o produto usado: "))
-    cur.execute("SELECT * FROM produtos WHERE nome = ?", (produto_utilizado)
-    resultado_produto_utilizado = cur.fetchall()
+    cur.execute("SELECT * FROM produtos WHERE nome = ?", (produto_utilizado,)) #zebra
+    resultado_produto_utilizado = cur.fetchone()
     
     if not resultado_produto_utilizado:
         input(f"{produto_utilizado} não encontrado no banco de dados, tente novamente.") 
+        limpar_tela()
     else:
+        input(resultado_produto_utilizado)
         id_produto_utilizado = resultado_produto_utilizado[0]
         quantidade_produtos_utilizado = resultado_produto_utilizado[2]
         
-        cur.execute("SELECT * FROM financeiro WHERE produto_id = ?", (id_produto_utilizado))
+        cur.execute("SELECT * FROM financeiro WHERE produto_id = ?", (id_produto_utilizado,)) #zebra
         resultado_financeiro_id = cur.fetchone()
         preco_produto_utilizado = resultado_financeiro_id[1]
 
         quantidade_produtos = int(input(f"Digite a quantidade de {produto_utilizado} utilizada"))
-
-        produto_final = str(input("Digite o nome do produto que foi criado: "))
-        quantidade_produtos_finais = int(input("Digite a quantidade de produtos finais gerados: "))
-        cur.execute("INSERT INTO produto_final (nome_produto_final, quantidade) VALUES (?, ?)", (produto_final, quantidade_produtos_finais))
-        
-        nova_quantidade_produto_utilizado = quantidade_produtos - quantidade_produtos_utilizado
+        nova_quantidade_produto_utilizado = quantidade_produtos_utilizado - quantidade_produtos
         if nova_quantidade_produto_utilizado < 0:
             input("Quantidade maior do que a existente no banco de dados. Tente novamente.")
         else:
-            cur.execute("UPDATE produtos SET quantidade = ? WHERE id = ?", (id_produto_utilizado, nova_quantidade_produto_utilizado))
-        preco_final = quantidade_produtos * preco_produto_utilizado / quantidade_produtos_finais
+            produto_final = str(input("Digite o nome do produto que foi criado: "))
+            quantidade_produtos_finais = int(input("Digite a quantidade de produtos finais gerados: "))
+            preco_final = quantidade_produtos * preco_produto_utilizado / quantidade_produtos_finais
+            cur.execute("INSERT INTO produto_final (nome_produto_final, quantidade, preço) VALUES (?, ?, ?)", (produto_final, quantidade_produtos_finais, preco_final,))  
+            if nova_quantidade_produto_utilizado <= 0:
+                cur.execute("DELETE FROM produtos WHERE nome = ?", (produto_utilizado,))
+            else:
+                cur.execute("UPDATE produtos SET quantidade = ? WHERE id = ?", (id_produto_utilizado, nova_quantidade_produto_utilizado,))
+    con.commit()
 
 
 def adicionar_produtos_db():
@@ -83,7 +115,7 @@ def adicionar_produtos_db():
     preco_total = quantidade_produtos_add * preco
 
 
-    cur.execute('SELECT * FROM produtos WHERE nome = ?', (produto_add,))
+    cur.execute('SELECT * FROM produtos WHERE nome = ?', (produto_add,))#zebra
     resultado = cur.fetchone()
     
 
@@ -99,7 +131,7 @@ def adicionar_produtos_db():
         quantidade_atual = resultado[2]
         nova_quantidade = quantidade_atual + quantidade_produtos_add
         
-        cur.execute("SELECT preço_total FROM financeiro WHERE produto_id = ?", (produto_id,))
+        cur.execute("SELECT preço_total FROM financeiro WHERE produto_id = ?", (produto_id,))#zebra
         resultado2 = cur.fetchone()
         _=resultado2
         cur.execute("UPDATE produtos SET quantidade = ? WHERE id = ?", (nova_quantidade, produto_id))
@@ -112,7 +144,7 @@ def adicionar_produtos_db():
 
 def remover_produtos_db():    
     produto_rmv = str(input("Digite o nome do produto: ")).lower().strip()
-    cur.execute("SELECT * FROM produtos WHERE nome = ?", (produto_rmv,))
+    cur.execute("SELECT * FROM produtos WHERE nome = ?", (produto_rmv,))#zebra
     resultado = cur.fetchone()
     if not resultado:
         input("Produto não encontrado, tente novamente.")
@@ -151,79 +183,85 @@ def remover_quantidade():
 
 
 def listar_produtos_db(produto_db):
-    cur.execute("SELECT * FROM produtos WHERE nome = ?", (produto_db,))
+    cur.execute("SELECT * FROM produtos WHERE nome = ?", (produto_db,))#zebra
     resultado = cur.fetchall()
     if resultado:
         for produto in resultado:
             print(f"Nome: {produto[1]}, Quantidade: {produto[2]}")
     else:
         print("❌ Produto não encontrado.")
-
 while True:
-    print(f'{20 * "-="}')
-    print(f"{10 * ' '}Escolha uma opção")
-    print(f'{20 * "-="}')
-    escolhaMenu = int(input(' 1 - Adicionar produto \n 2 - Remover produtos \n 3 - Ver produtos\n 4 - Sair do programa\n→ '))
-
+    escolha_uma_opcao()
+    escolhaMenu = int(input(' 1 - Gerenciar produto final \n 2 - Gerenciar produtos brutos \n 3 - Relatórios \n 4 - Controle de finanças \n 5 - sair '))
     if escolhaMenu == 1:
-        while True:
-            limpar_tela()
-            print(f'{20 * "-="}')
-            print(f"{10 * ' '}Escolha uma opção")
-            print(f'{20 * "-="}')
-            opcao_escolha1 = int(input(' 1 - Adicionar um produto \n 2 - Sair para o menu\n→ '))
-            if opcao_escolha1 == 1:
-                limpar_tela()
-                adicionar_produtos_db()
-            elif opcao_escolha1 == 2:
-                limpar_tela()
-                break
-
+        limpar_tela()
+        escolha_uma_opcao()
+        calcular_produto_final()
     elif escolhaMenu == 2:
+        limpar_tela()
         while True:
-            limpar_tela()
-            print(f'{20 * "-="}')
-            print(f"{10 * ' '}Escolha uma opção")
-            print(f'{20 * "-="}')
-            escolha_rmv = int(input(' 1 - Remover um produto \n 2 - Alterar a quantidade de um produto\n 3 - Sair '))
-            if escolha_rmv == 1:
-                limpar_tela()
-                remover_produtos_db()
-            elif escolha_rmv == 2:
-                remover_quantidade()
-                limpar_tela()
-            elif escolha_rmv == 3:
+            escolha_uma_opcao()
+            escolhaMenu2 = int(input(' 1 - Adicionar produto \n 2 - Remover produtos \n 3 - Ver produtos\n 4 - Sair do programa\n→ '))
+
+            if escolhaMenu2 == 1:
+                while True:
+                    limpar_tela()
+                    escolha_uma_opcao()
+                    opcao_escolha1 = int(input(' 1 - Adicionar um produto \n 2 - Sair para o menu\n→ '))
+                    if opcao_escolha1 == 1:
+                        limpar_tela()
+                        adicionar_produtos_db()
+                    elif opcao_escolha1 == 2:
+                        limpar_tela()
+                        break
+
+            elif escolhaMenu2 == 2:
+                while True:
+                    limpar_tela()
+                    escolha_uma_opcao()
+                    escolha_rmv = int(input(' 1 - Remover um produto \n 2 - Alterar a quantidade de um produto\n 3 - Sair '))
+                    if escolha_rmv == 1:
+                        limpar_tela()
+                        remover_produtos_db()
+                    elif escolha_rmv == 2:
+                        remover_quantidade()
+                        limpar_tela()
+                    elif escolha_rmv == 3:
+                        limpar_tela()
+                        break
+
+            elif escolhaMenu2 == 3:
+                while True:
+                    limpar_tela()
+                    escolha_uma_opcao()
+                    opcao_escolha3 = int(input(' 1 - Ver um produto específico \n 2 - Ver todos os produtos \n 3 - Sair\n→ '))
+                    if opcao_escolha3 == 1:
+                        limpar_tela()
+                        nome_produto = input("Digite o nome do produto a buscar: ").lower().strip()
+                        listar_produtos_db(nome_produto)
+                        input("\nAperte Enter para continuar...")
+                    elif opcao_escolha3 == 2:
+                        limpar_tela()
+                        cur.execute("SELECT * FROM produtos")#zebra
+                        produtos = cur.fetchall()
+                        for produto in produtos:
+                            print(f"Nome: {produto[1]}, Quantidade: {produto[2]}")
+                        input("\nAperte Enter para continuar...")
+                    elif opcao_escolha3 == 3:
+                        limpar_tela()
+                        break
+                    elif opcao_escolha3 == 4:
+                        exemplo1 = str(input('Digite a tabela que você deseja procurar: '))
+                        exemplo = str(input('Digite o nome que deseja procurar: '))
+                        funcao_select(exemplo1, exemplo, c=False, d=False, e=False)
+
+            elif escolhaMenu2 == 4:
                 limpar_tela()
                 break
-
-    elif escolhaMenu == 3:
-        while True:
-            limpar_tela()
-            print(f'{20 * "-="}')
-            print(f"{10 * ' '}Escolha uma opção")
-            print(f'{20 * "-="}')
-            opcao_escolha3 = int(input(' 1 - Ver um produto específico \n 2 - Ver todos os produtos \n 3 - Sair\n→ '))
-            if opcao_escolha3 == 1:
-                limpar_tela()
-                nome_produto = input("Digite o nome do produto a buscar: ").lower().strip()
-                listar_produtos_db(nome_produto)
-                input("\nAperte Enter para continuar...")
-            elif opcao_escolha3 == 2:
-                limpar_tela()
-                cur.execute("SELECT * FROM produtos")
-                produtos = cur.fetchall()
-                print("\n📦 Produtos cadastrados:")
-                for produto in produtos:
-                    print(f"Nome: {produto[1]}, Quantidade: {produto[2]}")
-                input("\nAperte Enter para continuar...")
-            elif opcao_escolha3 == 3:
-                limpar_tela()
-                break
-
-    elif escolhaMenu == 4:
+    if escolhaMenu == 4:
         limpar_tela()
         print("👋 Saindo do programa...")
         break
-
 con.commit()
 con.close()
+
