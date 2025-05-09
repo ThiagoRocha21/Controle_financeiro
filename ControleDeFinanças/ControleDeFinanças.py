@@ -1,7 +1,7 @@
 #precisa mudar o esquema do menu, tornar um menu duplo, uma parte para os produtos brutos e outra parte para o produto final
-#bom deixar um espaço separado p/ o menu de estatística 
-#preciso implementar uma medida para que os preços no bd não fiquem diferentes
-    
+#bom deixar um espaço separado p/ o menu de estatística.
+#atualizar a parte do código referente ao controle de fluxo, implementar uma tabela pra isso e criar funções.
+#criar o esquema de orientação a objetos, dividir o código em funções e menu
 
 import sqlite3
 from os import system, name
@@ -34,27 +34,16 @@ cur.execute('''
         preço FLOAT                
     )         
 ''') #cria a tabela produto_final com as colunas produto_final_id, nome_produto_final, quantidade e preço
+
+cur.execute('''
+    CREATE TABLE IF NOT EXISTS controle_de_fluxo(
+            receitas VARCHAR(30),
+            preço_receitas FLOAT,
+            despesas VARCHAR(30),
+            preço_despesas FLOAT
+            )            
+''')
 con.commit() #salva as alterações no bd
-
-
-
-
-def funcao_select(tabela, coluna=None, valor=None, cond_extra=None, valor_extra=None): #cria uma função de select que pode usar o WHERE caso seja solicitado
-    query = f"SELECT * FROM {tabela}" 
-
-    parametros = []
-
-    if coluna and valor is not None:
-        query += f" WHERE {coluna} = ?"
-        parametros.append(valor)
-
-        if cond_extra and valor_extra is not None:
-            query += f" AND {cond_extra} = ?"
-            parametros.append(valor_extra)
-
-    cur.execute(query, parametros)
-    resultado_funcao = cur.fetchall()
-    print(resultado_funcao)
 
 
 
@@ -199,6 +188,31 @@ def listar_produtos_db(produto_db): #lista um produto com base em pesquisa ou li
 
 
 
+def adicionar_receita_fluxo():
+    nome_receita = str(input('Nome: '))
+    valor_receita = float(input('Valor: '))
+    cur.execute("INSERT INTO controle_de_fluxo (receitas, preço_receitas) VALUES (?, ?)", (nome_receita, valor_receita,))
+    
+
+
+def adicionar_despesa_fluxo():
+    nome_despesa = str(input("Nome: "))
+    valor_despesa = float(input("Valor: "))
+    cur.execute("INSERT INTO controle_de_fluxo (despesas, preço_despesas) VALUES (?, ?)", (nome_despesa, valor_despesa,))
+
+
+
+def verificar_fluxo():
+    cur.execute("SELECT * FROM controle_de_fluxo")
+    resultado_fluxo = cur.fetchall()
+    if resultado_fluxo:
+        for receita in resultado_fluxo:
+            print(f"Receita: {resultado_fluxo[0]}, Valor: {resultado_fluxo[1]}")
+            print(f"Despesa: {resultado_fluxo[2]}, Valor:{resultado_fluxo[3]}")
+
+
+
+
 while True:
     escolha_uma_opcao()
     escolhaMenu = int(input(' 1 - Gerenciar produto final \n 2 - Gerenciar produtos brutos \n 3 - Relatórios \n 4 - Controle de finanças \n 5 - sair ')) #menu inicial
@@ -267,10 +281,33 @@ while True:
             elif escolhaMenu2 == 4: # encerra o menu de produtos brutos
                 limpar_tela()
                 break
-    if escolhaMenu == 5: # encerra o programa
+    elif escolhaMenu == 4:
+        receitas = []
+        despesas = []
+
+        while True:
+            limpar_tela()
+            #menu
+            print(f"""{'=' * 40}\n 1 - Adicionar receita \n 2 - Adicionar despesa \n 3 - Verificar Fluxo \n 4 - Sair \n """)
+            opcao = int(input('Digite a opção:'))
+            #adicionar receita
+            if opcao == 1:
+                adicionar_receita_fluxo()
+            #adicionar despesa
+            elif opcao == 2:
+                adicionar_despesa_fluxo()
+            #verificar fluxo
+            elif opcao == 3:
+                verificar_fluxo()
+            #interromper menu
+            elif opcao == 4:
+                break
+            #caso digite uma opção inválida
+            else:
+                print('Opção inválida, digite uma opção válida.')
+    elif escolhaMenu == 5: # encerra o programa
         limpar_tela()
         print("👋 Saindo do programa...")
         break
 con.commit() #salva todas as alterações
 con.close() #fecha o bd
-
