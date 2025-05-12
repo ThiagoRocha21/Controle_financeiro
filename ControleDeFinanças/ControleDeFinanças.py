@@ -1,6 +1,7 @@
 #Corrigir o bug que faz com que não apareça nada no fluxo se não houver receitas
 #criar o esquema de orientação a objetos, dividir o código em funções e menu
-#Criar a função de excluir todas as receitas e despesas
+#Criar função que garante que não crie 2 receitas ou despesas iguais no bd
+#Criar menu de gerenciamento de produto final
 
 import sqlite3
 from os import system, name
@@ -196,7 +197,7 @@ def listar_produtos_db(produto_db): #lista um produto com base em pesquisa ou li
 #Funções responsáveis pela administração de capital:
 
 def adicionar_receita_fluxo(): #recebe as receitas
-    nome_receita = str(input('Nome: '))
+    nome_receita = str(input('Nome: ')).lower().strip()
     valor_receita = float(input('Valor: '))
     cur.execute("INSERT INTO controle_de_receita (receitas, preço_receitas) VALUES (?, ?)", (nome_receita, valor_receita,))
     con.commit()
@@ -205,7 +206,7 @@ def adicionar_receita_fluxo(): #recebe as receitas
 
 
 def remover_receita_fluxo():
-    nome_receita_remover = input(str("Digite o nome da receita que você deseja remover: "))
+    nome_receita_remover = input(str("Digite o nome da receita que você deseja remover: ")).lower().strip()
     cur.execute("SELECT * FROM controle_de_receita WHERE receitas = ?", (nome_receita_remover,))
     controle_de_erro_remover_receita = cur.fetchall()
     if controle_de_erro_remover_receita:
@@ -218,7 +219,7 @@ def remover_receita_fluxo():
 
 
 def adicionar_despesa_fluxo(): #recebe as despesas
-    nome_despesa = str(input("Nome: "))
+    nome_despesa = str(input("Nome: ")).lower().strip()
     valor_despesa = float(input("Valor: "))
     cur.execute("INSERT INTO controle_de_despesas (despesas, preço_despesas) VALUES (?, ?)", (nome_despesa, valor_despesa,))
     con.commit()
@@ -227,7 +228,7 @@ def adicionar_despesa_fluxo(): #recebe as despesas
 
 
 def remover_despesa_fluxo():
-    nome_despesa_remover = input(str("Digite o nome da despesa que você deseja remover: "))
+    nome_despesa_remover = input(str("Digite o nome da despesa que você deseja remover: ")).lower().strip()
     cur.execute("SELECT * FROM controle_de_despesas WHERE despesas = ?", (nome_despesa_remover,))
     controle_de_erro_remover_despesa = cur.fetchall()
     if controle_de_erro_remover_despesa:
@@ -268,12 +269,34 @@ def verificar_fluxo(): # procura as despesas e receitas e as exibe em ordem.
         for despesa in resultado_despesa:
             print(f"Despesa: {despesa[0]:<15} Valor: {despesa[1]:<10}")
         calcular_receita()
+        input("\nPressione enter para continuar... ")
     else:
         limpar_tela()
         input("Não há registro de despesas ou receitas. \n Pressione enter para continuar...")
-    input("\nPressione enter para continuar... ")
+    
 
 
+
+def apagar_fluxo(): #apaga todas as receitas e despesas
+    limpar_tela()
+    cur.execute('SELECT * from controle_de_despesas')
+    resultado_existe_despesas = cur.fetchall()
+    cur.execute('SELECT * from controle_de_receita')
+    resultado_existe_receitas = cur.fetchall() 
+
+    if resultado_existe_despesas and resultado_existe_receitas:
+        cur.execute('DELETE FROM controle_de_despesas')
+        cur.execute('DELETE FROM controle_de_receita')
+        input('Tudo foi removido ✅')
+    elif resultado_existe_receitas and not resultado_existe_despesas:
+        cur.execute('DELETE FROM controle_de_receita')
+        input('Receitas excluídas. Não há despesas a serem excluídas.')
+    elif resultado_existe_despesas and not resultado_existe_receitas:
+        cur.execute('DELETE FROM controle_de_despesas')
+        input('Despesas excluídas. Não há receitas a serem excluídas.')
+    else:
+        input('Não há nada a ser apagado. ')
+    con.commit()
 
 
 while True:
@@ -352,9 +375,11 @@ while True:
             opcao = int(input('Digite a opção:\n'))
             #adicionar receita
             if opcao == 1:
+                limpar_tela()
                 adicionar_receita_fluxo()
             #adicionar despesa
             elif opcao == 2:
+                limpar_tela()
                 adicionar_despesa_fluxo()
             #verificar fluxo
             elif opcao == 3:
@@ -370,7 +395,7 @@ while True:
                     elif opcao_menu_remover == 2:
                         remover_despesa_fluxo()
                     elif opcao_menu_remover == 3:
-                        print("pica penis")
+                        apagar_fluxo()
                     elif opcao_menu_remover == 4:
                         break
                     else: input("Digite uma opção válida.") 
