@@ -1,6 +1,6 @@
 #criar o esquema de orientação a objetos, dividir o código em funções e menu
 #Criar menu de gerenciamento de produto final
-#Consertar o bug das opções do menu de produtos finais e consertar o fato de ser usado só um ingrediente.
+#adicionar um esquema de datas no 
 
 import sqlite3
 from os import system, name
@@ -68,39 +68,58 @@ def limpar_tela(): #é responsável por limpar a tela dps de uma interação com
 
 #funções responsáveis pelo produto final
 
-def calcular_produto_final(): #calcula o o preço do produto final com base na quantidade de produtos brutos usados, o preço unitário de cada um e divide pela quantidade de produtos gerados
-    quantidade_produtos_usados = int(input('Quantos ingredientes foram usados para fazer o produto final?'))
-    for i in range(quantidade_produtos_usados):        
-        produto_utilizado = str(input("Digite o nome do produto usado: "))
-        cur.execute("SELECT * FROM produtos WHERE nome = ?", (produto_utilizado,)) #zebra
-        resultado_produto_utilizado = cur.fetchone()
-        
-        if not resultado_produto_utilizado:
-            input(f"{produto_utilizado} não encontrado no banco de dados, tente novamente.") 
-            limpar_tela()
-        else:
-            input(resultado_produto_utilizado)
+def calcular_produto_final():
+      precos_produtos = []
+      quantidade_produtos_usados = int(input('Quantos ingredientes foram usados para fazer o produto final: '))
+      for i in range(quantidade_produtos_usados):
+        while True:
+            produto_usado = input(f'Digite o nome do {i+1}º produto utilizado: \nCaso queira sair, digite: sair').lower().strip()
+            cur.execute("SELECT * FROM produtos WHERE nome = ?", (produto_usado,))
+            resultado_produto_utilizado = cur.fetchone()
+
+            if not resultado_produto_utilizado:
+                input('Produto não encontrado ❌ \nTente novamente...')
+                continue
+
+            try:
+                quantidade_produtos = int(input(f"Digite a quantidade de {produto_usado} utilizada: "))
+            except ValueError:
+                input("Quantidade inválida ❌ \nTente novamente...")
+                continue
+
+            if quantidade_produtos <= 0 or quantidade_produtos > resultado_produto_utilizado[2]:
+                input('Quantidade insuficiente ❌ \nTente novamente...')
+                continue
+
+            # Produto encontrado e quantidade válida
             id_produto_utilizado = resultado_produto_utilizado[0]
             quantidade_produtos_utilizado = resultado_produto_utilizado[2]
-            
-            cur.execute("SELECT * FROM financeiro WHERE produto_id = ?", (id_produto_utilizado,)) #zebra
-            resultado_financeiro_id = cur.fetchone()
-            preco_produto_utilizado = resultado_financeiro_id[1]
 
-            quantidade_produtos = int(input(f"Digite a quantidade de {produto_utilizado} utilizada"))
+            cur.execute("SELECT * FROM financeiro WHERE produto_id = ?", (id_produto_utilizado,))
+            resultado_financeiro_preco = cur.fetchone()
+            preco_produto_utilizado = resultado_financeiro_preco[1]
+
             nova_quantidade_produto_utilizado = quantidade_produtos_utilizado - quantidade_produtos
-            if nova_quantidade_produto_utilizado < 0:
-                input("Quantidade maior do que a existente no banco de dados. Tente novamente.")
-            else:
-                produto_final = str(input("Digite o nome do produto que foi criado: "))
-                quantidade_produtos_finais = int(input("Digite a quantidade de produtos finais gerados: "))
-                preco_final = quantidade_produtos * preco_produto_utilizado / quantidade_produtos_finais
-                cur.execute("INSERT INTO produto_final (nome_produto_final, quantidade, preço) VALUES (?, ?, ?)", (produto_final, quantidade_produtos_finais, preco_final,))  
-                if nova_quantidade_produto_utilizado <= 0:
-                    cur.execute("DELETE FROM produtos WHERE nome = ?", (produto_utilizado,))
-                else:
-                    cur.execute("UPDATE produtos SET quantidade = ? WHERE id = ?", (id_produto_utilizado, nova_quantidade_produto_utilizado,))
-    con.commit()
+
+            cur.execute("UPDATE produtos SET quantidade = ? WHERE id = ?", (nova_quantidade_produto_utilizado, id_produto_utilizado))
+            preco_total_pago = quantidade_produtos * preco_produto_utilizado
+            precos_produtos.append(preco_total_pago)
+
+            if nova_quantidade_produto_utilizado == 0:
+                cur.execute("DELETE FROM produtos WHERE nome = ?", (produto_usado,))
+            
+            break      
+      produto_final = str(input("Digite o nome do produto que foi criado: ")).lower().strip()
+      quantidade_produtos_finais = int(input("Digite a quantidade de produtos finais gerados: "))
+      precos_totais_dos_produtos = []
+      for i in range(quantidade_produtos_usados):
+            preco_do_produto = precos_produtos[i]
+            preco_produto_final = preco_do_produto / quantidade_produtos_finais
+            precos_totais_dos_produtos.append(preco_produto_final)
+      preco_total_produto_final = sum(precos_totais_dos_produtos)
+      cur.execute("INSERT INTO produto_final (nome_produto_final, quantidade, preço) VALUES (?, ?, ?)", (produto_final, quantidade_produtos_finais, preco_total_produto_final,))
+      input('Produto adicionado com sucesso ✅')     
+con.commit()
 
 
 
