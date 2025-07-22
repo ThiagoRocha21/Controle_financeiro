@@ -160,7 +160,7 @@ def remover_quantidade_produto_final():
 
 
 
-def listar_produto_final():
+def achar_produto_final():
     nome_produto_final_listar = str(input('Digite o nome do produto: '))
     cur.execute('SELECT * FROM produto_final WHERE nome_produto_final = ?', (nome_produto_final_listar,))
     produto_final_listado = cur.fetchone()
@@ -415,6 +415,7 @@ while True:
     escolha_uma_opcao()
     #menu Principal
     escolhaMenu = int(input(' 1 - Gerenciar produto final \n 2 - Gerenciar produtos brutos \n 3 - Relatórios \n 4 - Controle de finanças \n 5 - sair ')) 
+    
     if escolhaMenu == 1: # parte responsável pelo gerenciamento do produto final
         while True:
             limpar_tela()
@@ -423,11 +424,12 @@ while True:
             if escolha_menu_produto_final == 1:
                 limpar_tela()
                 calcular_produto_final()
+           
             elif escolha_menu_produto_final == 2:
                 limpar_tela()
                 escolha_uma_opcao()
                 #menu de remover produto final ou a quantidade
-                escolha_remover_final = int(input(' 1 - Remover quantidades do produto \n 2 - Remover produtos \n 3 - Voltar \n → '))
+                escolha_remover_final = int(input(' 1 - Remover quantidades do produto \n 2 - Remover produtos \n 3 - Listar produtos finais \n  4 - Voltar \n → '))
                 if escolha_remover_final == 1:
                     limpar_tela()
                     remover_quantidade_produto_final()
@@ -437,18 +439,30 @@ while True:
                 elif escolha_remover_final == 3:
                     limpar_tela()
                     break
+           
             elif escolha_menu_produto_final == 3:
                 limpar_tela()
-                listar_produto_final()
+                achar_ou_escolher_menu_final = int(input(' 1 - Procurar por um produto específico \n 2 - Ver todos os produtos finais \n 3 - Voltar  \n → '))
+                if achar_ou_escolher_menu_final == 1:
+                    limpar_tela()
+                    achar_produto_final()
+                    input()
+                elif achar_ou_escolher_menu_final == 2:
+                    limpar_tela()
+                    listar_todos_produtos_finais
+                    input()
+                elif achar_ou_escolher_menu_final == 3: 
+                    limpar_tela()
+                    break
             elif escolha_menu_produto_final == 4:
                 limpar_tela()
                 break
             else:
                 input('Opção inválida, tente novamente.')
 
+   
     elif escolhaMenu == 2: # parte responsável pelo gerenciamento dos produtos brutos
-        limpar_tela()
-        
+        limpar_tela() 
         #menu de gerenciamento produtos brutos
         while True:
             escolha_uma_opcao()
@@ -505,6 +519,8 @@ while True:
                 # encerra o menu de produtos brutos
                 limpar_tela()
                 break
+    
+    
     elif escolhaMenu == 4:
         while True:
             limpar_tela()
@@ -523,7 +539,7 @@ while True:
             #verificar fluxo
             elif escolha_menu_fluxo == 3:
                 verificar_fluxo()
-            #interromper menu
+            #remover despesas/receitas
             elif escolha_menu_fluxo == 4:
                 while True:
                     limpar_tela()
