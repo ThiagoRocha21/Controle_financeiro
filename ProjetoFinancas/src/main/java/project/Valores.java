@@ -1,16 +1,17 @@
 //ideias:
-//Adicionar o Maven
-//Adicionar o banco de dados
+//Ajeitar as opções do menu para não dar erro
+//Criar scripts do BD
+    //Scripts a serem criados:
+        //Adicionar Despesas
+        //Adicioanr Receitas
 //Adicionar uma forma de transferir esses dados para uma planilha e manter salvo para acompanhar o progresso
-package src;
+
+package project;
 
 
 import java.util.Scanner;
 import java.util.HashMap;
 import java.util.Map;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
 
 public class Valores {
 
@@ -126,7 +127,13 @@ public class Valores {
                 AdicionaDespesas();
             } else if (opcao == 2) {
                 AdicionaReceita();
-            } else if(opcao == 5) {
+            } else if(opcao == 3){
+                System.out.println("Opção ainda não disponível. Tente outra.");
+                scanner.nextLine();
+            }else if(opcao == 4){
+                System.out.println("Opção ainda não disponível. Tente outra.");
+                scanner.nextLine();
+            }else if(opcao == 5) {
                 informacoesDespesa();
                 informacoesReceita();
             }else if (opcao == 6) {

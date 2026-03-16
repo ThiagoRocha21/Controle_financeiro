@@ -1,7 +1,11 @@
-package src;
+package project;
 
-import java.util.ArrayList;
-public class Calculos extends Valores{
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.util.Properties;
+import java.io.InputStream;
+
+public class Calculos extends Valores {
 
     public float valorRestante() {
         float valorTotalDespesas = 0;
@@ -18,7 +22,6 @@ public class Calculos extends Valores{
     public static void main(String[] args) {
         Valores valores = new Valores();
         Calculos calculo = new Calculos();
-
         valores.menu();
     }
 }
